@@ -22,7 +22,7 @@ external_client = AsyncOpenAI(
 )
 
 model = OpenAIChatCompletionsModel(
-    model="gemini-1.5-flash",
+    model="deepseek-chat-v3-0324:free",
     openai_client=external_client,
 )
 

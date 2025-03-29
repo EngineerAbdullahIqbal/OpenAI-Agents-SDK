@@ -1,27 +1,28 @@
 import os 
 from dotenv import load_dotenv , find_dotenv # For Loading environment variables
 from agents import Agent , Runner , AsyncOpenAI , OpenAIChatCompletionsModel 
-from openai.types.responses import ResponseTextDeltaEvent
 from agents.run import RunConfig
-import asyncio
+from typing import cast
 import chainlit as cl
+
 
 # Load environment variables from .env file
 load_dotenv(find_dotenv())
 
 # set SECRET_KEY environment variable
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+MODEL=os.getenv('MODEL')
 
 
 # Set Externel Provider or client
 
 external_client = AsyncOpenAI(
-    api_key=GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    api_key=OPENROUTER_API_KEY,
+    base_url=os.getenv("BASE_URL"),
 )
 
 model = OpenAIChatCompletionsModel(
-    model="gemini-1.5-flash",
+    model=MODEL,
     openai_client=external_client,
 )
 
@@ -53,26 +54,41 @@ async def start():
 @cl.on_message
 async def main(message: cl.Message):
     '''This function is called when user sends a message to chat'''
-    
-    msg = cl.Message(content="")
-    await msg.send()
-
-    history = cl.user_session.get("history")
-    agent : Agent = cl.user_session.get("agent")
-    config : RunConfig = cl.user_session.get("config")
+    history = cl.user_session.get("history") or []
 
     history.append(
         {"role": "user", "content": message.content}
     )  # Add user message to history
-    
-    result = await cl.make_async(Runner.run_sync)(agent ,input=history, run_config=config)
-
-
-    response_text = result.final_output
-    await cl.Message(content=response_text).send()
-
-    history.append({"role": "assistant", "content": response_text})
-    # cl.user_session.set("history", history)
 
     
+    msg = cl.Message(content="")
+    await msg.send()
+
+    agent : Agent = cl.user_session.get("agent")
+    config : RunConfig = cl.user_session.get("config")
+
+    
+    try:
+        print("\nCALLING_AGENT_WITH_CONTEXT" , history , "\n")
         
+        result = Runner.run_streamed(agent ,input=history , run_config=config)
+
+        async for event in result.stream_events():
+            if event.type == 'raw_response_event' and hasattr(event.data , 'delta'):
+                token = event.data.delta
+                await msg.stream_token(token)
+
+        history.append({"role": "assistant" , 'content' : msg.content})
+
+        cl.user_session.set("history", history)
+
+        print(f"User : {message.content}")
+        print(f"Assistant : {msg.content}")
+
+
+    
+
+    except Exception as e:
+        await msg.update(content=f'Error: {str(e)}')
+        print(f"Error: {str(e)}")
+
