@@ -64,8 +64,8 @@ async def main(message: cl.Message):
     msg = cl.Message(content="")
     await msg.send()
 
-    agent : Agent = cl.user_session.get("agent")
-    config : RunConfig = cl.user_session.get("config")
+    agent : Agent =  cast(Agent , cl.user_session.get("agent"))
+    config : RunConfig = cast(RunConfig , cl.user_session.get("config"))
 
     
     try:
@@ -78,7 +78,7 @@ async def main(message: cl.Message):
                 token = event.data.delta
                 await msg.stream_token(token)
 
-        history.append({"role": "assistant" , 'content' : msg.content})
+        history.append({"role": "assistant" , "content" : msg.content})
 
         cl.user_session.set("history", history)
 

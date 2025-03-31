@@ -1,0 +1,13 @@
+[project]
+name = "04-multi-ai-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.13.3",
+    "chainlit>=2.4.400",
+    "openai-agents>=0.0.7",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+]
