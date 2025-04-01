@@ -1,154 +1,137 @@
-from agents import Agent , Runner , function_tool , AsyncOpenAI , OpenAIChatCompletionsModel 
+from agents import Agent , Runner , AsyncOpenAI , OpenAIChatCompletionsModel
 from agents.run import RunConfig
-from typing import cast , Dict , Optional
-import chainlit as cl
-from dotenv import load_dotenv , find_dotenv
-import requests
-from bs4 import BeautifulSoup
-import json
+from dotenv import load_dotenv , find_dotenv # For Loading environment variables
 import os
-from openai.types.responses import (
-    ResponseFunctionCallArgumentsDeltaEvent,  # tool call streaming
-    ResponseCreatedEvent, # start of new event like tool call or final answer
-    ResponseTextDeltaEvent  
-)
-
+from typing import cast
+import chainlit as cl
 
 load_dotenv(find_dotenv())
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODEL=os.getenv('MODEL')
 
-external_client = AsyncOpenAI(
+OPENROUTER_API_KEY=os.getenv("OPENROUTER_API_KEY")
+MODEL=os.getenv("MODEL")
+
+provider = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
-    base_url=os.getenv("BASE_URL"),
+    base_url="https://openrouter.ai/api/v1"
 )
 
 model = OpenAIChatCompletionsModel(
     model=MODEL,
-    openai_client=external_client,
+    openai_client=provider
 )
 
-def fetch_github_profile(username):
-    url = f"https://github.com/EngineerAbdullahIqbal"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
 
-def extract_linkedin_profile_data(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, "html.parser")
-        script_tag = soup.find("script", {"id": "__NEXT_DATA__"})
-        if script_tag:
-            data = json.loads(script_tag.string)
-            profile = data.get("props", {}).get("pageProps", {}).get("profile", {})
-            name = f"{profile.get('firstName', '')} {profile.get('lastName', '')}"
-            job_title = profile.get("headline", "")
-            return {"name": name, "job_title": job_title}
-    return {}
-
-
-@function_tool
-async def fetch_profile_data(url: str) -> dict:
-    if "github.com" in url:
-        username = url.split("/")[-1]
-        return fetch_github_profile(username)
-    elif "linkedin.com/in/" in url:
-        return extract_linkedin_profile_data(url)
-    else:
-        return {"error": "Unsupported URL format"}
-    
-
-
-# Decorator to handle OAuth callback from GitHub
-@cl.oauth_callback
-def oauth_callback(
-    provider_id: str,  # ID of the OAuth provider (GitHub)
-    token: str,  # OAuth access token
-    raw_user_data: Dict[str, str],  # User data from GitHub
-    default_user: cl.User,  # Default user object from Chainlit
-) -> Optional[cl.User]:  # Return User object or None
-    """
-    Handle the OAuth callback from GitHub
-    Return the user object if authentication is successful, None otherwise
-    """
-    print(f"Provider: {provider_id}")  # Print provider ID for debugging
-    print(f"User data: {raw_user_data}")  # Print user data for debugging
-
-    return default_user  # Return the default user object
-
-
-
-data_fetcher = Agent(
-    name="Data Fetcher",
-    instructions="""You are a data fetcher with the ability to fetch data from different sources
-    Fetches data from a given URL.""",
-    tools=[fetch_profile_data],
+senior_chef = Agent(
+    name="Senior Chef",
+    instructions="""
+    You are a senior chef with 50 years of experience in cooking, dedicated to guiding people through a wide variety of recipes and sharing your extensive knowledge of ingredients, 
+    techniques, and kitchen tools. Your guidance should be clear, supportive, and tailored to the user's skill level, from beginners to experienced cooks. 
+    Offer cooking tips, explain techniques, suggest substitutions, and help troubleshoot common issues. 
+    Be respectful of different culinary traditions and always prioritize kitchen safety
+    """,
     model=model
 )
 
-personal_assistant = Agent(
-    name="Personal Assistant",
-    instructions="""You are my Personal Assistant. You know all information about Abdullah.
-    If a user says 'Hello' or 'Hi', answer with 'Hello from Abdullah.
-    - Answer in Very Humble Manner.
-    - If user Ask anyting else, answer with 'I can answer only about Abdullah'.
-    - Use the Data Fetcher to fetch data from different sources.""",
-    handoffs=[data_fetcher],
+
+nutrition_agent = Agent(
+    name="Nutrition Expert",
+    instructions="""
+    You are a nutrition expert with deep knowledge of dietary science, food composition, and health guidelines. 
+    Your role is to:
+    - Provide accurate nutritional information about foods and recipes.
+    - Suggest healthy alternatives and substitutions for various dietary needs (e.g., vegan, gluten-free, low-carb).
+    - Offer guidance on how to adapt recipes to meet specific health goals.
+    - Answer questions about the health benefits and risks of different foods.
+    Be informative, supportive, and encouraging. Help users make healthier choices without judgment, and always base your advice on scientific evidence. 
+    Consider the user's individual health goals and dietary restrictions when providing recommendations.
+    Note: While you can provide general nutritional guidance, remind users to consult a healthcare professional for personalized medical advice.
+    """,
     model=model
 )
 
+
+triage_agent = Agent(
+    name="Triage Specialist",
+    instructions="""
+    You are a triage specialist tasked with directing user queries to the appropriate agent: the Senior Chef or the Nutrition Expert.
+    Analyze the user's question to determine its primary focus:
+    - If the query is about cooking techniques, recipes, ingredients, kitchen tools, or culinary traditions, route it to the Senior Chef.
+    - If the query is about nutritional information, dietary advice, health benefits, or adapting recipes for specific diets, route it to the Nutrition Expert.
+    For questions that seem to overlap, prioritize based on the main intent:
+    - If the question is primarily about how to cook something, even if it mentions health, send it to the Senior Chef.
+    - If the question is primarily about the health aspects of food, even if it mentions cooking, send it to the Nutrition Expert.
+    After analyzing the query, output 'ROUTE: Senior Chef' or 'ROUTE: Nutrition Expert' to indicate where the query should be directed.
+    Be efficient and accurate in your routing to ensure users receive the most relevant assistance.
+    """,
+    handoffs=[senior_chef , nutrition_agent],
+    model=model
+)
+
+# Helper function to collect the full response from an agent
+async def get_full_response(agent, history, config):
+    result = Runner.run_streamed(agent, history, run_config=config)
+    full_response = ""
+    async for event in result.stream_events():
+        if event.type == 'raw_response_event' and hasattr(event.data, 'delta'):
+            full_response += event.data.delta
+    return full_response
 
 @cl.on_chat_start
 async def start():
-    '''Setting Up the chat session for user when user connects to chat'''
-    run_config = RunConfig(
-    model=model,
-    tracing_disabled=True,
- )   
+    config = RunConfig(
+        model=model,
+        tracing_disabled=True
+    )
 
-    cl.user_session.set("agent", personal_assistant)
-    cl.user_session.set("config", run_config)
-    cl.user_session.set("history", [])  # Initialize empty chat history
+    cl.user_session.set("history" , [])
 
-    await cl.Message(
-        content="Hello! How can I help you today?"
-    ).send()  # Send welcome message
+    cl.user_session.set("agent" , triage_agent)
+    cl.user_session.set("config" , config)
+
+
+    await cl.Message(content="Hello! How can I help you today?").send()
+
 
 
 @cl.on_message
-async def handle_message(message: cl.Message):
-    # Get message history from session
-    history = cl.user_session.get("history", [])
+async def main(message: cl.Message):
+    '''
+    This function is called when user sends a message to chat'''
 
-    # Add user message to history
-    history.append({"role": "user", "content": message.content})
-
-    # Create a message for streaming the response
-    msg = cl.Message(content="")
+    msg = cl.Message(content="Thinking...")
     await msg.send()
 
-    # Get agent and config from session
+    history = cl.user_session.get("history") or []
+
+
     agent : Agent = cast(Agent , cl.user_session.get("agent"))
     config : RunConfig = cast(RunConfig , cl.user_session.get("config"))
 
-    # Run the agent with streaming
-    result = Runner.run_streamed(
-        agent,
-        input=history,
-        run_config=config,
-    )
+    routing_decision = await get_full_response(agent, history, config)
 
-    # Stream the tokens as they come
+    # Step 2: Select the appropriate agent based on the routing decision
+    if "ROUTE: Senior Chef" in routing_decision:
+        selected_agent = senior_chef
+    elif "ROUTE: Nutrition Expert" in routing_decision:
+        selected_agent = nutrition_agent
+    else:
+        selected_agent = triage_agent  # Fallback in case routing fails
+
+
+    history.append({"role" : "user" , "content" : message.content})
+
+    result = Runner.run_streamed(selected_agent , history , run_config=config)
+
     async for event in result.stream_events():
-        if event.type == "raw_response_event" and isinstance(
-            event.data, ResponseTextDeltaEvent
-        ):
-            await msg.stream_token(event.data.delta)
+        if event.type == 'raw_response_event' and hasattr(event.data , 'delta'):
+            token = event.data.delta
+            await msg.stream_token(token)
+        
 
-    # Add assistant response to history
-    history.append({"role": "assistant", "content": result.final_output})
-    cl.user_session.set("history", history)
+    history.append({"role":"assistant" , "content" : msg.content})
 
+    cl.user_session.set("history" , [])
+
+    print(f"User : {message.content}")
+    print(f"assistant : {msg.content}")
+    
