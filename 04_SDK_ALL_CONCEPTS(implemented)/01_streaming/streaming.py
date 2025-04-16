@@ -9,16 +9,15 @@ import chainlit as cl
 
 load_dotenv(find_dotenv())
 
-OPENROUTER_API_KEY=os.getenv('OPENROUTER_API_KEY')
-MODEL=os.getenv('MODEL')
+GEMINI_API_KEY=os.getenv('GEMINI_API_KEY')
 
 provider = AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url="https://openrouter.ai/api/v1",
+    api_key=GEMINI_API_KEY,
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
 model = OpenAIChatCompletionsModel(
-    model=MODEL,
+    model="gemini-2.0-flash",
     openai_client=provider,
 )
 

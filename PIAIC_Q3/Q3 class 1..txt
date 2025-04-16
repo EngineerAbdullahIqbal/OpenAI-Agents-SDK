@@ -1,0 +1,29 @@
+Q3 class 1.
+
+## DACA (Dapr Agentic Cloud Ascent)
+
+	- D -> Dapr (Distributed Application Runtime.)
+	- A -> Agentic (Autonomous)
+	- C -> Cloud (Local to server or for All world avalibilty of app)
+	- A -> Ascent (Down To Upper)
+# Benifts of Dapr:
+	- All cloud Provider Supportable to Dapr
+	- Sidecar For Management 
+
+## Cloud Native:
+
+	- kubernetes (Cloude Platform)
+	- Google cloud
+	- Azure (Optional)
+	- AWS
+
+## Server Less (Cloud Provider)
+	- High Limitations
+	
+
+## Artifact??????????????????????????????
+
+
+## A2A (Agent 2 Agent Communcication)
+
+	- Agent Card

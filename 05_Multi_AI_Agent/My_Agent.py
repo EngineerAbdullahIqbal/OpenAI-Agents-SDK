@@ -10,9 +10,14 @@ load_dotenv(find_dotenv())
 OPENROUTER_API_KEY=os.getenv("OPENROUTER_API_KEY")
 MODEL=os.getenv("MODEL")
 
+# Check if the API key is present; if not, raise an error
+if not OPENROUTER_API_KEY:
+    raise ValueError("OPENROUTER_API_KEY is not set. Please ensure it is defined in your .env file.")
+
+
 provider = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
-    base_url="https://openrouter.ai/api/v1"
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
 model = OpenAIChatCompletionsModel(
@@ -80,6 +85,7 @@ async def get_full_response(agent, history, config):
 async def start():
     config = RunConfig(
         model=model,
+        model_provider=provider,
         tracing_disabled=True
     )
 
