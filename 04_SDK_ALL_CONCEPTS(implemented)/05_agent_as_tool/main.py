@@ -10,8 +10,8 @@ from typing import cast
 load_dotenv(find_dotenv())
 
 # set SECRET_KEY environment variable
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODEL="mistralai/mistral-small-3.1-24b-instruct:free"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+MODEL="gemini-2.0-flash"
 
 
 # Set Externel Provider or client
@@ -19,8 +19,8 @@ MODEL="mistralai/mistral-small-3.1-24b-instruct:free"
 
 def setup_config():
     external_client = AsyncOpenAI(
-        api_key=OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1"
+        api_key=GEMINI_API_KEY,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
 
     model = OpenAIChatCompletionsModel(
@@ -36,14 +36,14 @@ def setup_config():
 
 
     Hindi_translator = Agent(
-        name='Hindi Translator',
+        name='Hindi_Translator',
         instructions='Translate user query to Hindi',
         handoff_description="Specialist agent for Hindi translation",
         model=model
     )
 
     urdu_translator = Agent(
-        name='Urdu Translator',
+        name='Urdu_Translator',
         instructions='Translate user query to Urdu',        
         handoff_description="Specialist agent for Urdu translation",
         model=model
@@ -58,11 +58,11 @@ def setup_config():
         ),
         tools=[
             Hindi_translator.as_tool(
-                tool_name="Hindi Translator",
+                tool_name="Hindi_Translator",
                 tool_description="Translate user query to Hindi",
             ),
             urdu_translator.as_tool(
-                tool_name="Urdu Translator",
+                tool_name="Urdu_Translator",
                 tool_description="Translate user query to Urdu",
             ),
         ],
