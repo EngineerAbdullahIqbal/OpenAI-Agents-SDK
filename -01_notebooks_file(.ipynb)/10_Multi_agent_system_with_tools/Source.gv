@@ -1,0 +1,24 @@
+
+    digraph G {
+        graph [splines=true];
+        node [fontname="Arial"];
+        edge [penwidth=1.5];
+    "__start__" [label="__start__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"__end__" [label="__end__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"Triage Agent" [label="Triage Agent", shape=box, style=filled, fillcolor=lightyellow, width=1.5, height=0.8];"Shoping Agent" [label="Shoping Agent", shape=box, style=filled, style=rounded, fillcolor=lightyellow, width=1.5, height=0.8];"__start__" [label="__start__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"__end__" [label="__end__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"Shoping Agent" [label="Shoping Agent", shape=box, style=filled, fillcolor=lightyellow, width=1.5, height=0.8];"get_customer_info" [label="get_customer_info", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"get_all_products_in_store" [label="get_all_products_in_store", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"get_shopping_cart" [label="get_shopping_cart", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"add_to_cart" [label="add_to_cart", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"remove_from_cart" [label="remove_from_cart", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"Manager Agent" [label="Manager Agent", shape=box, style=filled, style=rounded, fillcolor=lightyellow, width=1.5, height=0.8];"__start__" [label="__start__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"__end__" [label="__end__", shape=ellipse, style=filled, fillcolor=lightblue, width=0.5, height=0.3];"Manager Agent" [label="Manager Agent", shape=box, style=filled, fillcolor=lightyellow, width=1.5, height=0.8];"get_order_status" [label="get_order_status", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"order_refund" [label="order_refund", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"create_support_ticket" [label="create_support_ticket", shape=ellipse, style=filled, fillcolor=lightgreen, width=0.5, height=0.3];"__start__" -> "Triage Agent";
+            "Triage Agent" -> "Shoping Agent";
+        "Shoping Agent" -> "get_customer_info" [style=dotted, penwidth=1.5];
+        "get_customer_info" -> "Shoping Agent" [style=dotted, penwidth=1.5];
+        "Shoping Agent" -> "get_all_products_in_store" [style=dotted, penwidth=1.5];
+        "get_all_products_in_store" -> "Shoping Agent" [style=dotted, penwidth=1.5];
+        "Shoping Agent" -> "get_shopping_cart" [style=dotted, penwidth=1.5];
+        "get_shopping_cart" -> "Shoping Agent" [style=dotted, penwidth=1.5];
+        "Shoping Agent" -> "add_to_cart" [style=dotted, penwidth=1.5];
+        "add_to_cart" -> "Shoping Agent" [style=dotted, penwidth=1.5];
+        "Shoping Agent" -> "remove_from_cart" [style=dotted, penwidth=1.5];
+        "remove_from_cart" -> "Shoping Agent" [style=dotted, penwidth=1.5];"Shoping Agent" -> "__end__";
+            "Triage Agent" -> "Manager Agent";
+        "Manager Agent" -> "get_order_status" [style=dotted, penwidth=1.5];
+        "get_order_status" -> "Manager Agent" [style=dotted, penwidth=1.5];
+        "Manager Agent" -> "order_refund" [style=dotted, penwidth=1.5];
+        "order_refund" -> "Manager Agent" [style=dotted, penwidth=1.5];
+        "Manager Agent" -> "create_support_ticket" [style=dotted, penwidth=1.5];
+        "create_support_ticket" -> "Manager Agent" [style=dotted, penwidth=1.5];"Manager Agent" -> "__end__";}
